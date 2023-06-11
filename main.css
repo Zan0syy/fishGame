@@ -1,0 +1,19 @@
+
+.body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.clics {
+    font-size: 50px;
+    color: gray;
+}
+.location_img{
+    width:50%;
+    height:50%;
+}
+.change_location{
+    background-color: aqua;
+    border-radius:20px;
+}
