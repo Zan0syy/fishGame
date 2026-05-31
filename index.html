@@ -1,21 +1,421 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Рыбное место: Возрождение</title>
-    <link rel="stylesheet" href="main.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎣 Рыбалка-Симулятор v20</title>
+<style>
+:root {
+    --bg:#0a0e14; --panel:#141b22; --border:#1e3048; --accent:#4a9eff;
+    --gold:#f5b042; --green:#2ecc71; --red:#e74c3c; --text:#c8d6e5; --dim:#7f8c9a;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e14;color:#c8d6e5;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow:hidden}
+#game-screen{width:100vw;height:100vh;position:relative;background:linear-gradient(180deg,#1a2a3a 0%,#0d1b2a 40%,#0a1628 100%);display:flex;flex-direction:column;transition:background 2s}
+.sky-dawn{background:linear-gradient(180deg,#ff7e5f 0%,#feb47b 30%,#1a3a5c 70%,#0a1628 100%)!important}
+.sky-day{background:linear-gradient(180deg,#4facfe 0%,#00f2fe 30%,#1a5a9c 70%,#0d2b4a 100%)!important}
+.sky-dusk{background:linear-gradient(180deg,#ff6b6b 0%,#ee5a24 30%,#2c1b4d 70%,#0a0e14 100%)!important}
+.sky-night{background:linear-gradient(180deg,#0a0e14 0%,#141e30 40%,#243b55 100%)!important}
+.stars-container{position:absolute;top:0;left:0;width:100%;height:40%;pointer-events:none;z-index:1;opacity:0;transition:opacity 3s}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 3s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
+.cloud{position:absolute;background:rgba(255,255,255,0.15);border-radius:50%;animation:floatCloud linear infinite;pointer-events:none;z-index:2}
+.cloud::before,.cloud::after{content:'';position:absolute;background:inherit;border-radius:50%}
+.cloud::before{width:50px;height:50px;top:-25px;left:15px}
+.cloud::after{width:70px;height:70px;top:-30px;left:50px}
+@keyframes floatCloud{0%{transform:translateX(-200px)}100%{transform:translateX(calc(100vw + 200px))}}
+.rain-container{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;opacity:0;transition:opacity 2s}
+.raindrop{position:absolute;width:2px;background:linear-gradient(transparent,rgba(174,194,224,0.5));animation:rain linear infinite}
+@keyframes rain{0%{transform:translateY(-100px)}100%{transform:translateY(100vh)}}
+.fog-layer{position:absolute;bottom:0;left:0;width:100%;height:30%;background:linear-gradient(transparent,rgba(200,210,220,0.15));pointer-events:none;z-index:2;opacity:0;transition:opacity 4s}
+.water-scene{position:absolute;bottom:28%;left:0;right:0;height:42%;background:linear-gradient(180deg,rgba(26,58,92,0.6) 0%,rgba(10,25,50,0.9) 100%);border-top:2px solid rgba(255,255,255,0.1);overflow:visible;z-index:3}
+.wave{position:absolute;bottom:0;width:200%;height:30px;background:rgba(255,255,255,0.05);border-radius:40%;animation:waveMove 4s ease-in-out infinite}
+.wave:nth-child(2){bottom:8px;animation-delay:-2s;opacity:0.7}
+.wave:nth-child(3){bottom:16px;animation-delay:-1s;opacity:0.5}
+@keyframes waveMove{0%{transform:translateX(-50%)}50%{transform:translateX(0%)}100%{transform:translateX(-50%)}}
+.rod-scene{position:absolute;bottom:28%;left:0;right:0;height:40%;pointer-events:none;z-index:6}
+.rod-container{position:absolute;bottom:5%;left:15%;transform:rotate(-20deg);transform-origin:bottom center;transition:transform 0.5s ease-out}
+.rod-container.casting{animation:rodCast 0.6s ease-out}
+.rod-container.bent{animation:rodBend 0.4s ease-out forwards}
+@keyframes rodBend{0%{transform:rotate(-20deg) scaleX(1)}100%{transform:rotate(-38deg) scaleX(1.06)}}
+@keyframes rodCast{0%{transform:rotate(-35deg)}40%{transform:rotate(5deg)}70%{transform:rotate(-15deg)}100%{transform:rotate(-20deg)}}
+.rod-pole{width:4px;height:160px;background:linear-gradient(180deg,#D2691E,#8B4513,#654321);border-radius:2px;position:relative}
+.rod-tip{position:absolute;top:-16px;left:-3px;width:10px;height:26px;background:linear-gradient(180deg,#e74c3c,#c0392b);border-radius:50%}
+.fishing-line{position:absolute;top:-16px;left:2px;width:1px;height:120px;background:rgba(255,255,255,0.5);transform-origin:top center;transition:transform 0.1s}
+.bobber{position:absolute;top:104px;left:-7px;width:16px;height:16px;background:radial-gradient(circle at 30% 30%,#ff6b6b,#c0392b);border-radius:50%;border:2px solid #8b0000;animation:bobFloat 2s ease-in-out infinite;box-shadow:0 2px 8px rgba(0,0,0,0.5);transition:all 0.15s;z-index:7}
+.bobber::after{content:'';position:absolute;top:-14px;left:6px;width:2px;height:12px;background:#ff0;border-radius:1px}
+@keyframes bobFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+.bobber.biting{animation:bobBite 0.25s ease-in-out infinite}
+@keyframes bobBite{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(-14px) scale(1.25)}50%{transform:translateY(6px) scale(0.9)}75%{transform:translateY(-18px) scale(1.15)}}
+.bobber.reeling{animation:none;transition:left 0.15s ease-out,top 0.15s ease-out}
+#cast-area{position:absolute;bottom:22%;left:50%;transform:translateX(-50%);cursor:pointer;z-index:20}
+#cast-btn{padding:14px 40px;font-size:1.1em;font-weight:700;background:linear-gradient(135deg,#2ecc71,#27ae60);color:#fff;border:3px solid transparent;border-radius:30px;cursor:pointer;transition:all 0.2s;outline:none;min-width:180px;text-align:center}
+#cast-btn:hover{box-shadow:0 0 20px rgba(46,204,113,0.4)}
+#cast-btn:disabled{background:#555;cursor:not-allowed;box-shadow:none}
+#cast-btn.bite-active{background:linear-gradient(135deg,#2ecc71,#27ae60);border-color:#2ecc71;animation:biteGlow 0.5s ease-in-out infinite}
+@keyframes biteGlow{0%,100%{box-shadow:0 0 10px rgba(46,204,113,0.4);border-color:#2ecc71}50%{box-shadow:0 0 30px rgba(46,204,113,0.9);border-color:#00ff88}}
+#quest-panel{position:absolute;left:8px;top:50%;transform:translateY(-50%);z-index:25;max-width:250px;transition:all 0.3s}
+#quest-panel.collapsed{max-width:40px}
+.quest-toggle{width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.7);border:1px solid #1e3048;cursor:pointer;font-size:1.1em;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative}
+.quest-toggle:hover{border-color:#4a9eff;background:rgba(74,158,255,0.2)}
+.quest-toggle .badge{position:absolute;top:-5px;right:-5px;background:#e74c3c;color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.55em;display:flex;align-items:center;justify-content:center}
+.quest-list{background:rgba(0,0,0,0.85);border:1px solid #1e3048;border-radius:10px;padding:8px;margin-top:4px;max-height:300px;overflow-y:auto;display:none}
+#quest-panel:not(.collapsed) .quest-list{display:block}
+.quest-mini{background:rgba(0,0,0,0.4);border:1px solid #1e3048;border-radius:6px;padding:6px 8px;margin:3px 0;font-size:0.7em;cursor:pointer;transition:all 0.2s}
+.quest-mini:hover{border-color:#4a9eff}
+.quest-mini.active{border-color:#f5b042;background:rgba(245,176,66,0.1)}
+.quest-mini .qm-title{font-weight:600;color:#4a9eff}
+.quest-mini .qm-progress{font-size:0.85em;color:#7f8c9a;margin-top:1px}
+.quest-mini.done{opacity:0.5}
+.quest-mini.done .qm-title{text-decoration:line-through;color:#2ecc71}
+.quest-popup{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#141b22;border:2px solid #f5b042;border-radius:12px;padding:14px 20px;z-index:200;box-shadow:0 0 30px rgba(245,176,66,0.5);animation:popupIn 0.4s ease-out;max-width:350px;text-align:center}
+@keyframes popupIn{0%{transform:translateX(-50%) translateY(-30px);opacity:0}100%{transform:translateX(-50%) translateY(0);opacity:1}}
+.quest-popup .qp-title{font-weight:700;color:#4a9eff;font-size:1em}
+.quest-popup .qp-desc{font-size:0.8em;color:#c8d6e5;margin:4px 0}
+.quest-popup .qp-reward{font-size:0.75em;color:#f5b042}
+.quest-popup .qp-close{margin-top:8px;padding:6px 18px;background:#2ecc71;color:#fff;border:none;border-radius:15px;cursor:pointer;font-weight:600}
+.levelup-popup{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#141b22;border:2px solid #4a9eff;border-radius:12px;padding:16px 24px;z-index:200;box-shadow:0 0 30px rgba(74,158,255,0.5);animation:popupIn 0.4s ease-out;max-width:400px;text-align:center}
+.levelup-popup .lu-title{font-weight:700;color:#2ecc71;font-size:1.2em}
+.levelup-popup .lu-items{font-size:0.75em;color:#c8d6e5;margin:6px 0;text-align:left;max-height:150px;overflow-y:auto}
+.levelup-popup .lu-item{margin:2px 0;color:#f5b042}
+.levelup-popup .lu-close{margin-top:8px;padding:6px 18px;background:#2563eb;color:#fff;border:none;border-radius:15px;cursor:pointer;font-weight:600}
+.battle-panel{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.9);border-top:2px solid #1e3048;padding:8px 12px 12px;z-index:15;display:flex;flex-direction:column;align-items:center}
+.battle-fish-name{font-size:0.85em;font-weight:700;color:#4a9eff;margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.tension-track-outer{width:100%;max-width:500px;height:40px;border-radius:20px;position:relative;border:3px solid #1a1a2e;box-shadow:inset 0 3px 10px rgba(0,0,0,0.6);overflow:hidden;background:#1a1a2e}
+.tension-track-bg{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,#e74c3c 0%,#e74c3c 8%,#ef4a3a 11%,#f06030 14%,#f97316 17%,#f9851a 20%,#f9a020 23%,#f5b428 26%,#eab308 29%,#e8c010 32%,#e0d018 35%,#c8e020 38%,#7dd830 40%,#2ecc71 42%,#2ecc71 44%,#2ecc71 46%,#2ecc71 48%,#2ecc71 50%,#2ecc71 52%,#2ecc71 54%,#2ecc71 56%,#2ecc71 58%,#7dd830 60%,#c8e020 62%,#e0d018 65%,#e8c010 68%,#eab308 71%,#f5b428 74%,#f9a020 77%,#f9851a 80%,#f97316 83%,#f06030 86%,#ef4a3a 89%,#e74c3c 92%,#e74c3c 100%);opacity:0.35}
+.tension-fill{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,#e74c3c 0%,#e74c3c 8%,#ef4a3a 11%,#f06030 14%,#f97316 17%,#f9851a 20%,#f9a020 23%,#f5b428 26%,#eab308 29%,#e8c010 32%,#e0d018 35%,#c8e020 38%,#7dd830 40%,#2ecc71 42%,#2ecc71 44%,#2ecc71 46%,#2ecc71 48%,#2ecc71 50%,#2ecc71 52%,#2ecc71 54%,#2ecc71 56%,#2ecc71 58%,#7dd830 60%,#c8e020 62%,#e0d018 65%,#e8c010 68%,#eab308 71%,#f5b428 74%,#f9a020 77%,#f9851a 80%,#f97316 83%,#f06030 86%,#ef4a3a 89%,#e74c3c 92%,#e74c3c 100%);background-size:100% 100%;transition:width 0.06s linear;opacity:0.9;border-radius:17px 0 0 17px}
+.tension-zone{position:absolute;top:0;height:100%;left:37%;width:26%;border-left:3px dashed rgba(255,255,255,0.6);border-right:3px dashed rgba(255,255,255,0.6);pointer-events:none;z-index:3}
+.tension-fish{position:absolute;top:-18px;font-size:1.6em;transition:left 0.06s ease-out;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.8));pointer-events:none;z-index:5;transform:translateX(-50%)}
+.tension-dist-label{position:absolute;bottom:-15px;font-size:0.55em;color:#f5b042;transition:left 0.06s ease-out;pointer-events:none;z-index:5;transform:translateX(-50%);white-space:nowrap}
+.tension-marker{position:absolute;top:-2px;height:44px;width:3px;background:#fff;border-radius:2px;z-index:4;transition:left 0.06s linear;box-shadow:0 0 8px rgba(255,255,255,0.7)}
+.stamina-mini{width:100%;max-width:500px;height:4px;background:#1a1a2e;border-radius:2px;margin:5px 0;overflow:hidden}
+.stamina-mini-fill{height:100%;background:linear-gradient(90deg,#e74c3c,#f5b042,#2ecc71);border-radius:2px;transition:width 0.3s}
+.battle-controls{display:flex;align-items:center;gap:8px;margin-top:2px}
+.battle-btn{padding:10px 28px;font-size:0.95em;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:22px;cursor:pointer}
+.battle-net-btn{padding:6px 16px;font-size:0.75em;font-weight:600;background:#7c3aed;color:#fff;border:none;border-radius:18px;cursor:pointer}
+.battle-net-btn:disabled{background:#444;cursor:not-allowed}
+.battle-info{font-size:0.6em;color:#7f8c9a;margin-top:1px;text-align:center}
+.spin-track{width:100%;max-width:500px;height:28px;background:linear-gradient(90deg,#2ecc71 0%,#1a3a5c 30%,#0d2b4a 60%,#0a1628 100%);border-radius:14px;position:relative;margin:6px 0;border:2px solid #1e3048;overflow:hidden}
+.spin-lure{position:absolute;top:2px;font-size:1.2em;transition:left 0.1s linear;z-index:5;filter:drop-shadow(0 0 6px rgba(255,255,255,0.6));transform:translateX(-50%)}
+.spin-bite-zone{position:absolute;top:0;height:100%;background:rgba(245,176,66,0.2);border-left:2px dashed rgba(245,176,66,0.5);border-right:2px dashed rgba(245,176,66,0.5);z-index:3;pointer-events:none}
+#top-bar{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:rgba(0,0,0,0.7);border-bottom:1px solid #1e3048;z-index:10}
+#exp-display{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.4);padding:5px 10px;border-radius:18px;border:1px solid #1e3048}
+#exp-bar-outer{width:70px;height:5px;background:#1a1a2e;border-radius:3px;overflow:hidden}
+#exp-bar-inner{height:100%;background:linear-gradient(90deg,#4a9eff,#7b68ee);border-radius:3px;transition:width 0.3s}
+#exp-text{font-size:0.6em;color:#7f8c9a;min-width:45px}
+#location-btn{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.4);padding:5px 10px;border-radius:18px;border:1px solid #1e3048;cursor:pointer}
+#location-btn:hover{border-color:#4a9eff}
+#bottom-bar{display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;background:rgba(0,0,0,0.8);border-top:1px solid #1e3048;z-index:10;flex-wrap:wrap}
+.slot{background:rgba(0,0,0,0.5);border:1px solid #1e3048;border-radius:7px;padding:3px 5px;cursor:pointer;text-align:center;min-width:44px;font-size:0.6em;transition:all 0.2s}
+.slot:hover{border-color:#4a9eff;background:rgba(74,158,255,0.1)}
+.slot .icon{font-size:1.1em}.slot .val{font-weight:600;margin-top:1px;font-size:0.7em}
+.slot.active-chum{border-color:#f5b042}
+#corner-btns{position:absolute;bottom:70px;right:10px;display:flex;flex-direction:column;gap:5px;z-index:20}
+.cbtn{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,0.6);border:1px solid #1e3048;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative}
+.cbtn:hover{border-color:#4a9eff;background:rgba(74,158,255,0.2)}
+.res-fish{font-size:3em;animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.uniq-badge{display:inline-block;background:linear-gradient(135deg,#f5b042,#d97706);color:#000;padding:4px 10px;border-radius:20px;font-weight:700;animation:glow 1.5s infinite;margin:4px 0}
+@keyframes glow{0%,100%{box-shadow:0 0 10px rgba(245,176,66,0.5)}50%{box-shadow:0 0 25px rgba(245,176,66,0.9)}}
+.line-warning{color:#f97316;font-size:0.65em;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal-box{background:#141b22;border:1px solid #1e3048;border-radius:16px;padding:20px;max-width:600px;width:95%;max-height:80vh;overflow-y:auto;position:relative}
+.modal-close{position:absolute;top:10px;right:14px;background:none;border:none;color:#7f8c9a;font-size:1.5em;cursor:pointer}
+.modal-close:hover{color:#e74c3c}
+.modal-title{font-size:1.2em;font-weight:700;color:#4a9eff;margin-bottom:12px;text-align:center}
+.region{background:rgba(0,0,0,0.3);border:1px solid #1e3048;border-radius:10px;padding:10px;margin:6px 0}
+.region h4{color:#4a9eff}
+.spot{display:inline-block;background:rgba(74,158,255,0.1);border:1px solid #1e3048;border-radius:6px;padding:6px 10px;margin:3px;cursor:pointer;font-size:0.8em}
+.spot:hover{border-color:#4a9eff}.spot.sel{border-color:#2ecc71;background:rgba(46,204,113,0.2)}
+.shop-categories{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.shop-cat-btn{background:rgba(0,0,0,0.4);border:1px solid #1e3048;border-radius:10px;padding:10px;cursor:pointer;text-align:center;transition:all 0.2s}
+.shop-cat-btn:hover{border-color:#4a9eff;background:rgba(74,158,255,0.1)}
+.shop-cat-btn .cat-icon{font-size:1.8em}.shop-cat-btn .cat-name{font-size:0.75em;margin-top:2px;color:#c8d6e5}.shop-cat-btn .cat-count{font-size:0.65em;color:#7f8c9a}
+.shop-item{display:flex;justify-content:space-between;align-items:center;padding:8px;margin:3px 0;border-radius:8px;background:rgba(0,0,0,0.2);border:1px solid transparent;cursor:pointer;font-size:0.8em;transition:all 0.2s}
+.shop-item:hover{border-color:#4a9eff;background:rgba(74,158,255,0.1)}
+.shop-item.locked{opacity:0.4;cursor:not-allowed}
+.shop-item .item-info{flex:1}.shop-item .item-name{font-weight:600}.shop-item .item-specs{font-size:0.7em;color:#7f8c9a;margin-top:1px}
+.shop-item .item-price{color:#f5b042;font-weight:700;font-size:0.85em;margin-left:8px}.shop-item .item-lvl{font-size:0.65em;color:#7f8c9a}
+.back-btn{width:100%;padding:8px;margin-top:8px;background:rgba(0,0,0,0.4);border:1px solid #1e3048;border-radius:8px;color:#c8d6e5;cursor:pointer;text-align:center;font-size:0.85em}
+.back-btn:hover{border-color:#4a9eff}
+</style>
 </head>
 <body>
-    <button class="change_location" onclick="change(this)"><h2>Сменить локацию</h2></button>
-        <p id="location_num">Локация 1</p>
-        <img src="http://gonefishing.narod.ru/ezhov1024.jpg" alt="nothing" id="loc_img" class="location_img">
-        <button onclick="loca(location_num)">
-            Локация 1
-        </button>
-        <button onclick="loc(location_num)">
-            Локация 2
-        </button>
-    <script src="script.js"></script>
-</body>    
+<div id="game-screen"><div style="display:flex;align-items:center;justify-content:center;height:100%;color:#7f8c9a;font-size:1.2em">🎣 Загрузка...</div></div>
+<script>
+document.addEventListener('DOMContentLoaded',initGame);
+if(document.readyState==='complete'||document.readyState==='interactive')setTimeout(initGame,10);
+
+function initGame(){
+
+// ==================== ДАННЫЕ ====================
+const REGIONS=[{name:'Деревенский пруд',unl:1,spots:[{name:'Тихая заводь',tier:1,fish:['Карась','Плотва','Уклейка']},{name:'Камышовый берег',tier:1,fish:['Карась','Окунь','Ёрш']}]},{name:'Старый хутор',unl:5,spots:[{name:'Заброшенная пристань',tier:2,fish:['Лещ','Карп','Окунь']},{name:'Бурные пороги',tier:2,fish:['Щука','Судак','Форель']}]},{name:'Лесное озеро',unl:12,spots:[{name:'Упавшее дерево',tier:2,fish:['Карп','Щука','Форель']},{name:'Лунная поляна',tier:3,fish:['Сазан','Толстолобик','Амур']}]},{name:'Большая река',unl:20,spots:[{name:'Обрывистый берег',tier:3,fish:['Сом','Осётр','Сазан']},{name:'Глубокий плёс',tier:3,fish:['Сом','Белуга','Амур']}]},{name:'Дикое море',unl:35,spots:[{name:'Скалистый мыс',tier:3,fish:['Белуга','Осётр','Сом']}]}];
+const FISH={'Карась':{w:[0.1,0.5],b:'Червь',p:2,r:'common',e:'🐟',pr:1,xp:10},'Плотва':{w:[0.05,0.2],b:'Опарыш',p:1,r:'common',e:'🐟',pr:1,xp:8},'Уклейка':{w:[0.01,0.05],b:'Червь',p:1,r:'common',e:'🐟',pr:1,xp:5},'Окунь':{w:[0.1,0.6],b:'Мотыль',p:2,r:'common',e:'🐠',pr:1,xp:10},'Ёрш':{w:[0.02,0.1],b:'Червь',p:1,r:'common',e:'🐟',pr:1,xp:6},'Лещ':{w:[0.5,2],b:'Кукуруза',p:3,r:'common',e:'🐟',pr:5,xp:20},'Карп':{w:[1,5],b:'Бойл ваниль',p:5,r:'rare',e:'🐡',pr:5,xp:30},'Щука':{w:[1,4],b:'Живец',p:6,r:'rare',e:'🐊',pr:5,xp:35},'Судак':{w:[0.8,3.5],b:'Живец',p:5,r:'rare',e:'🐟',pr:5,xp:28},'Форель':{w:[0.5,2.5],b:'Бойл клубника',p:4,r:'rare',e:'🐠',pr:5,xp:25},'Сазан':{w:[2,8],b:'Пеллетс',p:6,r:'rare',e:'🐡',pr:5,xp:35},'Толстолобик':{w:[3,15],b:'Бойл тутти',p:7,r:'rare',e:'🐋',pr:10,xp:45},'Амур':{w:[4,12],b:'Бойл клубника',p:6,r:'rare',e:'🐟',pr:10,xp:40},'Сом':{w:[5,30],b:'Живец',p:8,r:'legendary',e:'🐋',pr:10,xp:50},'Осётр':{w:[8,40],b:'Живец',p:9,r:'legendary',e:'🦈',pr:10,xp:60},'Белуга':{w:[20,80],b:'Живец',p:10,r:'legendary',e:'🐳',pr:10,xp:80}};
+
+const RODS={1:{n:'Удочка 0.4кг',pow:1,opt:0.4,price:50,lvl:1,key:'rod_1'},5:{n:'Удочка 0.8кг',pow:2,opt:0.8,price:100,lvl:5,key:'rod_5'},10:{n:'Удочка 2кг',pow:3,opt:2,price:200,lvl:10,key:'rod_10'},15:{n:'Удочка 4кг',pow:4,opt:4,price:500,lvl:15,key:'rod_15'},20:{n:'Удочка 6кг',pow:5,opt:6,price:950,lvl:20,key:'rod_20'},25:{n:'Удочка 8кг',pow:6,opt:8,price:1500,lvl:25,key:'rod_25'},30:{n:'Удочка 12кг',pow:8,opt:12,price:2100,lvl:30,key:'rod_30'},35:{n:'Удочка 20кг',pow:12,opt:20,price:4000,lvl:35,key:'rod_35'},40:{n:'Удочка 30кг',pow:16,opt:30,price:7000,lvl:40,key:'rod_40'},50:{n:'Удочка 45кг',pow:20,opt:45,price:12000,lvl:50,key:'rod_50'},60:{n:'Удочка 80кг',pow:29,opt:80,price:25000,lvl:60,key:'rod_60'},70:{n:'Удочка 100кг',pow:35,opt:100,price:42000,lvl:70,key:'rod_70'}};
+const RODS_SPIN={22:{n:'Спиннинг 5кг',pow:4,opt:5,price:800,lvl:22,type:'spinning',key:'spin_22'},28:{n:'Спиннинг 10кг',pow:6,opt:10,price:1500,lvl:28,type:'spinning',key:'spin_28'},30:{n:'Спиннинг 20кг',pow:10,opt:20,price:3000,lvl:30,type:'spinning',key:'spin_30'},38:{n:'Спиннинг 35кг',pow:14,opt:35,price:5000,lvl:38,type:'spinning',key:'spin_38'},48:{n:'Спиннинг 50кг',pow:20,opt:50,price:9500,lvl:48,type:'spinning',key:'spin_48'},50:{n:'Спиннинг 65кг',pow:24,opt:65,price:13000,lvl:50,type:'spinning',key:'spin_50'},65:{n:'Спиннинг 90кг',pow:30,opt:90,price:30000,lvl:65,type:'spinning',key:'spin_65'},75:{n:'Спиннинг 110кг',pow:38,opt:110,price:55000,lvl:75,type:'spinning',key:'spin_75'}};
+const LINES={1:{n:'Монофил 0.12мм',brk:1.5,price:30,lvl:1,key:'line_1'},5:{n:'Монофил 0.15мм',brk:2.5,price:50,lvl:5,key:'line_5'},10:{n:'Монофил 0.20мм',brk:5,price:100,lvl:10,key:'line_10'},15:{n:'Монофил 0.25мм',brk:9,price:190,lvl:15,key:'line_15'},20:{n:'Монофил 0.30мм',brk:15,price:350,lvl:20,key:'line_20'},30:{n:'Плетёнка 0.12мм',brk:18,price:500,lvl:30,key:'line_30'},35:{n:'Плетёнка 0.15мм',brk:25,price:800,lvl:35,key:'line_35'},40:{n:'Плетёнка 0.18мм',brk:35,price:1300,lvl:40,key:'line_40'},50:{n:'Плетёнка 0.25мм',brk:75,price:3500,lvl:50,key:'line_50'},60:{n:'Плетёнка 0.30мм',brk:110,price:6000,lvl:60,key:'line_60'},75:{n:'Плетёнка 0.40мм',brk:240,price:18000,lvl:75,key:'line_75'}};
+const HOOKS={1:{n:'Крючок 200г',opt:0.2,max:0.5,price:30,lvl:1,key:'hook_1'},6:{n:'Крючок 500г',opt:0.5,max:1,price:60,lvl:6,key:'hook_6'},10:{n:'Крючок 1кг',opt:1,max:2,price:90,lvl:10,key:'hook_10'},15:{n:'Крючок 2кг',opt:2,max:4,price:160,lvl:15,key:'hook_15'},20:{n:'Крючок 4кг',opt:4,max:8,price:300,lvl:20,key:'hook_20'},25:{n:'Крючок 6кг',opt:6,max:12,price:400,lvl:25,key:'hook_25'},30:{n:'Крючок 8кг',opt:8,max:16,price:550,lvl:30,key:'hook_30'},35:{n:'Крючок 12кг',opt:12,max:24,price:800,lvl:35,key:'hook_35'},44:{n:'Крючок 20кг',opt:20,max:40,price:1500,lvl:44,key:'hook_44'},52:{n:'Крючок 30кг',opt:30,max:60,price:3200,lvl:52,key:'hook_52'},60:{n:'Крючок 58кг',opt:58,max:115,price:8500,lvl:60,key:'hook_60'},72:{n:'Крючок 100кг',opt:100,max:200,price:22000,lvl:72,key:'hook_72'}};
+const BAITS={1:{n:'Червь',attr:4,price:15,lvl:1,key:'bait_1'},3:{n:'Опарыш',attr:5,price:20,lvl:3,key:'bait_3'},6:{n:'Мотыль',attr:6,price:25,lvl:6,key:'bait_6'},9:{n:'Кукуруза',attr:5,price:20,lvl:9,key:'bait_9'},14:{n:'Выползок',attr:7,price:35,lvl:14,key:'bait_14'},22:{n:'Бойл ваниль',attr:8,price:50,lvl:22,key:'bait_22'},30:{n:'Бойл клубника',attr:9,price:70,lvl:30,key:'bait_30'},38:{n:'Бойл тутти-фрутти',attr:10,price:100,lvl:38,key:'bait_38'}};
+const SPINNERS={24:{n:'Блесна 5г',attr:6,weight:5,optFish:3,price:120,lvl:24,key:'spinner_24'},30:{n:'Блесна 10г',attr:7,weight:10,optFish:6,price:250,lvl:30,key:'spinner_30'},33:{n:'Блесна 20г',attr:8,weight:20,optFish:12,price:450,lvl:33,key:'spinner_33'},41:{n:'Блесна 35г',attr:9,weight:35,optFish:22,price:800,lvl:41,key:'spinner_41'},51:{n:'Блесна 50г',attr:10,weight:50,optFish:35,price:1500,lvl:51,key:'spinner_51'},53:{n:'Блесна 65г',attr:10,weight:65,optFish:45,price:2500,lvl:53,key:'spinner_53'},68:{n:'Блесна 90г',attr:10,weight:90,optFish:65,price:4500,lvl:68,key:'spinner_68'},77:{n:'Блесна 110г',attr:10,weight:110,optFish:85,price:7500,lvl:77,key:'spinner_77'}};
+const REELS={24:{n:'Катушка 1000',pow:2,smooth:1,eff:1.5,price:150,lvl:24,key:'reel_24'},31:{n:'Катушка 2000',pow:3,smooth:2,eff:2.5,price:300,lvl:31,key:'reel_31'},37:{n:'Катушка 3000',pow:5,smooth:3,eff:4,price:550,lvl:37,key:'reel_37'},45:{n:'Катушка 4000',pow:7,smooth:4,eff:5.5,price:900,lvl:45,key:'reel_45'},53:{n:'Катушка 5000',pow:10,smooth:5,eff:7,price:1600,lvl:53,key:'reel_53'},63:{n:'Катушка 6000',pow:13,smooth:7,eff:8.5,price:2800,lvl:63,key:'reel_63'},73:{n:'Катушка 8000',pow:17,smooth:9,eff:10,price:5000,lvl:73,key:'reel_73'}};
+const CHUMS={1:{n:'Хлебная прикормка',tf:'Карась',price:20,lvl:1,dur:600,key:'chum_1'},15:{n:'Бойловая прикормка',tf:'Карп',price:60,lvl:15,dur:1800,key:'chum_15'},35:{n:'Легендарная прикормка',tf:'Сом',price:200,lvl:35,dur:3600,key:'chum_35'}};
+const NETS={23:{n:'Сачок 10кг',max:10,price:200,lvl:23,key:'net_23'},30:{n:'Сачок 25кг',max:25,price:800,lvl:30,key:'net_30'},45:{n:'Сачок 40кг',max:40,price:2000,lvl:45,key:'net_45'},55:{n:'Сачок 80кг',max:80,price:6000,lvl:55,key:'net_55'},72:{n:'Сачок 120кг',max:120,price:15000,lvl:72,key:'net_72'}};
+const BPS={1:{n:'Рюкзак 10',slots:10,price:100,lvl:1,key:'bp_1'},10:{n:'Рюкзак 25',slots:25,price:500,lvl:10,key:'bp_10'},25:{n:'Рюкзак 50',slots:50,price:2000,lvl:25,key:'bp_25'},45:{n:'Рюкзак 100',slots:100,price:8000,lvl:45,key:'bp_45'},65:{n:'Рюкзак 200',slots:200,price:25000,lvl:65,key:'bp_65'}};
+
+// Единый словарь
+const ALL_ITEMS={};
+[{...RODS,...RODS_SPIN,...LINES,...HOOKS,...BAITS,...SPINNERS,...REELS,...CHUMS,...NETS,...BPS}].forEach(src=>{Object.values(src).forEach(item=>{ALL_ITEMS[item.key]=item})});
+
+const QUEST_CHAIN=[
+    {id:'q0',title:'Выберите локацию',desc:'Откройте карту и выберите место рыбалки',check:()=>curSpot!==null,reward:{exp:20,money:20,bait:{n:'Червь',qty:10}}},
+    {id:'q1',title:'Снарядите наживку',desc:'Нажмите на ячейку наживки и выберите Червя',check:()=>P.cBait!==null,reward:{exp:30,money:20}},
+    {id:'q2',title:'Первая рыба',desc:'Поймайте 1 любую рыбу',check:()=>P.totalFish>=1,reward:{exp:50,money:30}},
+    {id:'q3',title:'Три рыбы',desc:'Поймайте 3 любых рыбы',check:()=>P.totalFish>=3,reward:{exp:80,money:40,bait:{n:'Мотыль',qty:10}}},
+    {id:'q4',title:'Поймайте Карася',desc:'Карась клюёт на Червя в Деревенском пруду',check:()=>P.bFish.some(f=>f.name==='Карась'),reward:{exp:100,money:50}},
+    {id:'q5',title:'Поймайте Окуня',desc:'Окунь клюёт на Мотыля',check:()=>P.bFish.some(f=>f.name==='Окунь'),reward:{exp:120,money:60}},
+    {id:'q6',title:'Крупный улов',desc:'Поймайте рыбу весом больше 1 кг',check:()=>P.bFish.some(f=>f.weight>=1),reward:{exp:200,money:100}},
+    {id:'q7',title:'Поймайте Щуку',desc:'Щука клюёт на Живца',check:()=>P.bFish.some(f=>f.name==='Щука'),reward:{exp:250,money:150}},
+    {id:'q8',title:'Поймайте 10 рыб',desc:'Поймайте 10 любых рыб',check:()=>P.totalFish>=10,reward:{exp:300,money:200}},
+    {id:'q9',title:'Легендарный улов',desc:'Поймайте Сома',check:()=>P.bFish.some(f=>f.name==='Сом'),reward:{exp:500,money:500}},
+];
+
+const SAVE_KEY='fishing_v20';
+let P={name:'',money:100,level:1,exp:0,expNext:16,totalFish:0,totalEarned:0,rods:[RODS[1]],lines:[LINES[1]],hooks:[HOOKS[1]],baits:{'Червь':{...BAITS[1],qty:30}},chums:{},spinners:{},reels:[],nets:[],backpacks:[BPS[1]],cRod:RODS[1],cLine:LINES[1],cHook:HOOKS[1],cBait:null,cSpinner:null,cReel:null,cNet:null,cBP:BPS[1],bFish:[],records:{},chumActive:null,chumEndTime:0,quests:[],questIndex:0,tutorialStep:0,tutorialDone:!1,lastLevel:1};
+let curRegion=null,curSpot=null,battle=null,battleTimer=null,pulling=!1,bFishEmoji='🐟',isSpinning=!1;
+let gameHour=6,gameMinute=0,weather='clear',weatherTimer=0,atmosphereInterval=null;
+let fishingState='idle',pendingFish=null,biteTimer=null,spinLurePos=95,spinBitePos=50,spinTimer=null,spinPulling=!1,spinFish=null;
+let questPanelCollapsed=!0;
+let bobberLeft=50;
+
+function initQuests(){
+    if(P.questIndex<QUEST_CHAIN.length){
+        P.quests=[];
+        for(let i=0;i<=P.questIndex;i++){if(i<QUEST_CHAIN.length)P.quests.push({...QUEST_CHAIN[i],done:!1})}
+    }
+    const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+    if(saved.quests){saved.quests.forEach(sq=>{const qi=P.quests.findIndex(q=>q.id===sq.id);if(qi>=0&&sq.done)P.quests[qi].done=!0})}
+    if(saved.questIndex!==undefined)P.questIndex=saved.questIndex;
+}
+
+function save(){
+    const d={name:P.name,money:P.money,level:P.level,exp:P.exp,expNext:P.expNext,totalFish:P.totalFish,totalEarned:P.totalEarned,records:P.records,rods:P.rods.map(r=>r.key),lines:P.lines.map(l=>l.key),hooks:P.hooks.map(h=>h.key),nets:P.nets.map(n=>n.key),backpacks:P.backpacks.map(b=>b.key),spinners:Object.fromEntries(Object.entries(P.spinners).map(([k,v])=>[k,v.qty])),reels:P.reels.map(r=>r.key),baits:Object.fromEntries(Object.entries(P.baits).map(([k,v])=>[k,v.qty])),chums:Object.fromEntries(Object.entries(P.chums).map(([k,v])=>[k,v.qty])),cRod:P.cRod?.key,cLine:P.cLine?.key,cHook:P.cHook?.key,cBait:P.cBait?.key,cSpinner:P.cSpinner?.key,cReel:P.cReel?.key,cNet:P.cNet?.key,cBP:P.cBP?.key,bFish:P.bFish.map(f=>({n:f.name,w:f.weight,pr:f.price,u:f.isUnique,r:f.rarity,e:f.emoji})),chumActive:P.chumActive,chumEndTime:P.chumEndTime,quests:P.quests,questIndex:P.questIndex,tutorialStep:P.tutorialStep,tutorialDone:P.tutorialDone,lastLevel:P.lastLevel};
+    localStorage.setItem(SAVE_KEY,JSON.stringify(d));
+}
+
+function load(){
+    try{
+        const r=localStorage.getItem(SAVE_KEY);if(!r)return!1;const d=JSON.parse(r);
+        P.name=d.name||'';P.money=d.money||100;P.level=d.level||1;P.exp=d.exp||0;P.expNext=d.expNext||16;P.totalFish=d.totalFish||0;P.totalEarned=d.totalEarned||0;P.records=d.records||{};P.chumActive=d.chumActive||null;P.chumEndTime=d.chumEndTime||0;P.tutorialStep=d.tutorialStep||0;P.tutorialDone=d.tutorialDone||!1;P.questIndex=d.questIndex||0;P.lastLevel=d.lastLevel||P.level;
+        const byKey={};Object.values(ALL_ITEMS).forEach(v=>byKey[v.key]=v);
+        if(d.rods)P.rods=d.rods.map(k=>byKey[k]).filter(Boolean);
+        if(d.lines)P.lines=d.lines.map(k=>byKey[k]).filter(Boolean);
+        if(d.hooks)P.hooks=d.hooks.map(k=>byKey[k]).filter(Boolean);
+        if(d.nets)P.nets=d.nets.map(k=>byKey[k]).filter(Boolean);
+        if(d.backpacks)P.backpacks=d.backpacks.map(k=>byKey[k]).filter(Boolean);
+        if(d.reels)P.reels=d.reels.map(k=>byKey[k]).filter(Boolean);
+        P.baits={};if(d.baits)for(const[k,v]of Object.entries(d.baits)){const item=Object.values(BAITS).find(x=>x.n===k);if(item)P.baits[k]={...item,qty:typeof v==='number'?v:30}}
+        P.spinners={};if(d.spinners)for(const[k,v]of Object.entries(d.spinners)){const item=Object.values(SPINNERS).find(x=>x.n===k);if(item)P.spinners[k]={...item,qty:typeof v==='number'?v:3}}
+        P.chums={};if(d.chums)for(const[k,v]of Object.entries(d.chums)){const item=Object.values(CHUMS).find(x=>x.n===k);if(item)P.chums[k]={...item,qty:typeof v==='number'?v:1}}
+        P.cRod=byKey[d.cRod]||P.rods[0];P.cLine=byKey[d.cLine]||P.lines[0];P.cHook=byKey[d.cHook]||P.hooks[0];
+        P.cBait=d.cBait?Object.values(BAITS).find(x=>x.key===d.cBait)||null:null;
+        P.cSpinner=d.cSpinner?Object.values(SPINNERS).find(x=>x.key===d.cSpinner)||null:null;
+        P.cReel=byKey[d.cReel]||null;P.cNet=byKey[d.cNet]||null;P.cBP=byKey[d.cBP]||P.backpacks[0];
+        if(P.cRod&&P.cRod.type==='spinning')isSpinning=!0;
+        P.bFish=(d.bFish||[]).map(f=>({name:f.n,weight:f.w,price:f.pr,isUnique:f.u,rarity:f.r,emoji:f.e}));
+        initQuests();
+        if(d.quests){d.quests.forEach(sq=>{const qi=P.quests.findIndex(q=>q.id===sq.id);if(qi>=0&&sq.done)P.quests[qi].done=!0})}
+        if(P.chumActive&&Date.now()>P.chumEndTime){P.chumActive=null;P.chumEndTime=0}
+        return!0;
+    }catch(e){console.error(e);return!1}
+}
+
+function expForLvl(lv){return lv<=10?16*Math.pow(2,lv-1):(16*512)*Math.pow(3,lv-10)}
+function addExp(amt){P.exp+=amt;let lvl=!1,lvs=0;while(P.exp>=P.expNext){P.exp-=P.expNext;P.level++;lvs++;P.expNext=expForLvl(P.level);lvl=!0}if(lvl)showLevelUp(P.level,lvs);return{lvl,lvs}}
+function getRegions(){return REGIONS.filter(r=>P.level>=r.unl)}
+function getAll(dict){return Object.values(dict).sort((a,b)=>a.lvl-b.lvl)}
+
+function checkQuests(){
+    let anyDone=!1;
+    P.quests.forEach(q=>{if(!q.done&&q.check()){q.done=!0;P.exp+=q.reward.exp||0;P.money+=q.reward.money||0;if(q.reward.bait){if(P.baits[q.reward.bait.n])P.baits[q.reward.bait.n].qty+=q.reward.bait.qty;else{const bt=Object.values(BAITS).find(x=>x.n===q.reward.bait.n);if(bt)P.baits[q.reward.bait.n]={...bt,qty:q.reward.bait.qty}}}anyDone=!0;showQuestComplete(q);if(P.questIndex<QUEST_CHAIN.length-1){P.questIndex++;const nq=QUEST_CHAIN[P.questIndex];P.quests.push({...nq,done:!1});setTimeout(()=>showQuestPopup(nq),1500)}}});
+    if(anyDone)save();
+}
+
+function showQuestComplete(q){const pop=document.createElement('div');pop.className='quest-popup';pop.innerHTML=`<div class="qp-title">✅ Задание выполнено!</div><div class="qp-desc">${q.title}</div><div class="qp-reward">Награда: ${q.reward.exp||0} XP, ${q.reward.money||0} руб${q.reward.bait?`, ${q.reward.bait.qty} ${q.reward.bait.n}`:''}</div><button class="qp-close" onclick="this.parentElement.remove()">👍 Отлично!</button>`;document.body.appendChild(pop)}
+function showQuestPopup(q){const ex=document.querySelector('.quest-popup');if(ex)ex.remove();const pop=document.createElement('div');pop.className='quest-popup';pop.innerHTML=`<div class="qp-title">📋 Новое задание</div><div class="qp-desc"><b>${q.title}</b><br>${q.desc}</div><div class="qp-reward">Награда: ${q.reward.exp||0} XP, ${q.reward.money||0} руб${q.reward.bait?`, ${q.reward.bait.qty} ${q.reward.bait.n}`:''}</div><button class="qp-close" onclick="this.parentElement.remove()">👍 Принято!</button>`;document.body.appendChild(pop)}
+function showLevelUp(newLevel,lvs){let items=[];for(let lv=P.lastLevel+1;lv<=newLevel;lv++){Object.values(ALL_ITEMS).filter(it=>it.lvl===lv).forEach(it=>items.push(it))}P.lastLevel=newLevel;const pop=document.createElement('div');pop.className='levelup-popup';let ih='';if(items.length>0)ih='<div class="lu-items">🎁 Новые предметы:<br>'+items.map(it=>`<div class="lu-item">• ${it.n} (${it.price} руб)</div>`).join('')+'</div>';pop.innerHTML=`<div class="lu-title">🎊 УРОВЕНЬ ${newLevel}!</div>${ih}<button class="lu-close" onclick="this.parentElement.remove()">👍 Понял!</button>`;document.body.appendChild(pop);save()}
+
+// ==================== АТМОСФЕРА ====================
+function startAtmosphere(){gameHour=6+Math.floor(Math.random()*12);weather=['clear','clear','clear','cloudy','cloudy','rain','fog'][Math.floor(Math.random()*7)];weatherTimer=300+Math.floor(Math.random()*600);updateAtmosphere();atmosphereInterval=setInterval(updateAtmosphere,5000)}
+function updateAtmosphere(){const gs=document.getElementById('game-screen');if(!gs||battle)return;gameMinute+=5;if(gameMinute>=60){gameMinute=0;gameHour=(gameHour+1)%24}weatherTimer-=5;if(weatherTimer<=0){const w=['clear','clear','clear','cloudy','cloudy','rain','fog'];weather=w[Math.floor(Math.random()*w.length)];weatherTimer=300+Math.floor(Math.random()*600)}gs.classList.remove('sky-dawn','sky-day','sky-dusk','sky-night');if(gameHour>=5&&gameHour<8)gs.classList.add('sky-dawn');else if(gameHour>=8&&gameHour<17)gs.classList.add('sky-day');else if(gameHour>=17&&gameHour<20)gs.classList.add('sky-dusk');else gs.classList.add('sky-night');const se=gs.querySelector('.stars-container');if(se)se.style.opacity=(gameHour>=21||gameHour<4)?'1':'0';const re=gs.querySelector('.rain-container');if(re)re.style.opacity=weather==='rain'?'1':'0';const fe=gs.querySelector('.fog-layer');if(fe)fe.style.opacity=weather==='fog'?'0.6':'0';const ff=gs.querySelectorAll('.firefly');ff.forEach(f=>{f.style.opacity=(gameHour>=20||gameHour<4)?'1':'0'});const te=gs.querySelector('#time-display');if(te){const h=String(gameHour).padStart(2,'0'),m=String(gameMinute).padStart(2,'0');const wi={clear:'☀️',cloudy:'☁️',rain:'🌧️',fog:'🌫️'};te.innerHTML=`${wi[weather]||'☀️'} ${h}:${m}`}}
+function generateStars(){let h='<div class="stars-container">';for(let i=0;i<50;i++){const x=Math.random()*100,y=Math.random()*60,s=1+Math.random()*3,d=Math.random()*5;h+=`<div class="star" style="left:${x}%;top:${y}%;width:${s}px;height:${s}px;animation-delay:${d}s"></div>`}return h+'</div>'}
+function generateClouds(){let h='';for(let i=0;i<4;i++){const t=5+Math.random()*25,w=80+Math.random()*100,hh=30+Math.random()*30,d=30+Math.random()*40,dl=Math.random()*20;h+=`<div class="cloud" style="top:${t}%;width:${w}px;height:${hh}px;animation-duration:${d}s;animation-delay:${dl}s"></div>`}return h}
+function generateRain(){let h='<div class="rain-container">';for(let i=0;i<100;i++){const l=Math.random()*100,d=Math.random()*2,dr=0.5+Math.random()*0.5,hh=15+Math.random()*25;h+=`<div class="raindrop" style="left:${l}%;animation-delay:${d}s;animation-duration:${dr}s;height:${hh}px"></div>`}return h+'</div>'}
+function generateFireflies(){let h='';for(let i=0;i<6;i++){const l=10+Math.random()*80,t=30+Math.random()*40;h+=`<div class="firefly" style="left:${l}%;top:${t}%"></div>`}return h}
+
+// ==================== РЕНДЕР ====================
+function render(){
+    const gs=document.getElementById('game-screen');if(!gs||battle)return;
+    const expP=Math.floor((P.exp/P.expNext)*100);
+    const locName=curSpot?`${curRegion?.name} / ${curSpot.name}`:(curRegion?curRegion.name:'Нет локации');
+    let chumStatus='Нет';if(P.chumActive&&Date.now()<P.chumEndTime){const rem=Math.ceil((P.chumEndTime-Date.now())/60000);chumStatus=`${P.chumActive} (${rem}мин)`}else if(P.chumActive){P.chumActive=null;P.chumEndTime=0}
+    checkQuests();const undoneQuests=P.quests.filter(q=>!q.done).length;
+    const baitName=P.cBait?`${P.cBait.n}(${P.cBait.qty})`:'❌';
+    const spinnerName=P.cSpinner?`${P.cSpinner.n}(${P.cSpinner.qty})`:'❌';
+    const reelName=P.cReel?.n||'❌';
+    const wi={clear:'☀️',cloudy:'☁️',rain:'🌧️',fog:'🌫️'};const ts=`${String(gameHour).padStart(2,'0')}:${String(gameMinute).padStart(2,'0')}`;
+    const isWait=fishingState==='waiting'||fishingState==='bite';
+    const castText=isWait?'🎣 ВЫТАЩИТЬ!':'🎣 ЗАБРОСИТЬ';
+    const castDis=!curSpot||(!P.cBait&&!P.cSpinner)?'disabled':'';const biteCls=fishingState==='bite'?' bite-active':'';
+    
+    const activeQuests=P.quests.filter(q=>!q.done);
+    let questHTML='';
+    activeQuests.forEach(q=>{questHTML+=`<div class="quest-mini active"><div class="qm-title">${q.title}</div><div class="qm-progress">${q.desc}</div></div>`});
+    if(activeQuests.length===0)questHTML='<div style="font-size:0.65em;color:#7f8c9a;text-align:center">Нет активных заданий</div>';
+    
+    gs.innerHTML=`
+        ${generateStars()}${generateClouds()}${generateRain()}${generateFireflies()}<div class="fog-layer"></div>
+        <div id="top-bar"><div id="exp-display"><span style="font-size:1em">⭐</span><b style="color:#4a9eff">${P.level}</b><div id="exp-bar-outer"><div id="exp-bar-inner" style="width:${expP}%"></div></div><span id="exp-text">${P.exp}/${P.expNext}</span></div><div id="time-display" style="font-weight:600;color:#f5b042;font-size:0.8em">${wi[weather]||'☀️'} ${ts}</div><div id="location-btn" onclick="window._openMap()"><span>📍</span><span style="font-weight:600;font-size:0.8em">${locName}</span>${curSpot?`<span style="color:#f5b042">${'⭐'.repeat(curSpot.tier)}</span>`:''}</div><div style="display:flex;align-items:center;gap:8px"><span style="color:#f5b042;font-weight:700;font-size:0.85em">💰 ${P.money.toLocaleString()} руб</span></div></div>
+        <div style="flex:1;position:relative;overflow:hidden">
+            <div class="water-scene"><div class="wave"></div><div class="wave"></div><div class="wave"></div></div>
+            <div class="rod-scene"><div class="rod-container" id="rod-container"><div class="rod-pole"><div class="rod-tip"></div><div class="fishing-line"></div><div class="bobber" id="bobber"></div></div></div></div>
+            <div id="cast-area" onclick="window._handleCast()"><button id="cast-btn" class="${biteCls}" ${castDis} onclick="event.stopPropagation();window._handleCast()">${castText}</button></div>
+            <div id="corner-btns"><div class="cbtn" onclick="window._openShop()" title="Магазин">🛒</div><div class="cbtn" onclick="window._openBackpack()" title="Рюкзак">🎒</div><div class="cbtn" onclick="save();alert('✅ Сохранено!')" title="Сохранить">💾</div></div>
+            <div id="quest-panel" class="${questPanelCollapsed?'collapsed':''}"><div class="quest-toggle" onclick="toggleQuests()" title="Задания">📋${undoneQuests>0?`<span class="badge">${undoneQuests}</span>`:''}</div><div class="quest-list">${questHTML}</div></div>
+        </div>
+        <div id="bottom-bar"><div class="slot" onclick="window._openEquip('rod')"><div class="icon">🎣</div><div style="font-size:0.45em;color:#7f8c9a">Удочка</div><div class="val">${P.cRod?.n||'Нет'}</div></div><div class="slot" onclick="window._openEquip('line')"><div class="icon">📏</div><div style="font-size:0.45em;color:#7f8c9a">Леска</div><div class="val">${P.cLine?.n||'Нет'}<br><span style="font-size:0.55em">${P.cLine?.brk||0}кг</span></div></div><div class="slot" onclick="window._openEquip('hook')"><div class="icon">🪝</div><div style="font-size:0.45em;color:#7f8c9a">Крючок</div><div class="val">${P.cHook?.n||'Нет'}</div></div><div class="slot" onclick="window._openEquip('bait')"><div class="icon">🪱</div><div style="font-size:0.45em;color:#7f8c9a">Наживка</div><div class="val">${baitName}</div></div>${isSpinning?`<div class="slot" onclick="window._openEquip('spinner')"><div class="icon">🪙</div><div style="font-size:0.45em;color:#7f8c9a">Блесна</div><div class="val">${spinnerName}</div></div><div class="slot" onclick="window._openEquip('reel')"><div class="icon">🔧</div><div style="font-size:0.45em;color:#7f8c9a">Катушка</div><div class="val">${reelName}</div></div>`:''}<div class="slot${P.chumActive?' active-chum':''}" onclick="window._openEquip('chum')"><div class="icon">🧂</div><div style="font-size:0.45em;color:#7f8c9a">Прикормка</div><div class="val">${chumStatus}</div></div><div class="slot" onclick="window._openEquip('net')"><div class="icon">🥅</div><div style="font-size:0.45em;color:#7f8c9a">Сачок</div><div class="val">${P.cNet?.n||'Нет'}</div></div></div>
+    `;
+    document.addEventListener('keydown',globalKeyHandler);updateAtmosphere();
+}
+
+window.toggleQuests=function(){questPanelCollapsed=!questPanelCollapsed;if(!battle)render()}
+function globalKeyHandler(e){if(e.code==='Space'&&!battle){e.preventDefault();window._handleCast()}}
+window._handleCast=function(){if(battle)return;if(fishingState==='bite'){clearTimeout(biteTimer);const bb=document.getElementById('bobber');if(bb)bb.classList.remove('biting');const f=pendingFish;pendingFish=null;fishingState='idle';bobberLeft=90;startBattle(f,90);return}if(fishingState==='waiting'){clearTimeout(biteTimer);pendingFish=null;fishingState='idle';render();return}if(isSpinning){startSpinning()}else{startFloatFishing()}};
+function startFloatFishing(){if(!curSpot){alert('❌ Выберите место!');return}if(!P.cBait){alert('❌ Выберите наживку!');return}if(P.bFish.length>=P.cBP.slots){alert('❌ Рюкзак полон!');return}P.cBait.qty--;if(P.cBait.qty<=0){delete P.baits[P.cBait.n];P.cBait=null}let chumBonus=0;if(P.chumActive&&Date.now()<P.chumEndTime){const cd=Object.values(CHUMS).find(c=>c.n===P.chumActive);if(cd)chumBonus=0.3}else if(P.chumActive){P.chumActive=null;P.chumEndTime=0}fishingState='waiting';bobberLeft=90;const rc=document.getElementById('rod-container');if(rc){rc.classList.add('casting');rc.classList.remove('bent');setTimeout(()=>rc.classList.remove('casting'),600)}render();setTimeout(()=>{if(fishingState!=='waiting')return;const sf=curSpot.fish.map(n=>FISH[n]).filter(Boolean);let pool=sf.filter(f=>f.b===P.cBait?.n);if(pool.length===0)pool=sf;if(chumBonus>0&&P.chumActive){const cd=Object.values(CHUMS).find(c=>c.n===P.chumActive);if(cd){const tgt=pool.filter(f=>f.name===cd.tf);if(tgt.length>0&&Math.random()<0.5+chumBonus)pool=[...tgt,...pool]}}const tmpl=pool[Math.floor(Math.random()*pool.length)];const w=Math.round((Math.random()*(tmpl.w[1]-tmpl.w[0])+tmpl.w[0])*100)/100;const rM={common:1,rare:2,legendary:5};let pr=Math.floor(w*1000*(curSpot.tier===1?1:curSpot.tier===2?5:10)*rM[tmpl.r]);let xp=Math.floor((w*1000/10)*(tmpl.r==='common'?1:tmpl.r==='rare'?2.5:5));const rec=P.records[tmpl.n]||0;const isUniq=rec>0&&w>=rec*0.9;if(isUniq){pr*=3;xp*=3}bFishEmoji=tmpl.e;const fish={name:tmpl.n,weight:w,price:pr,exp:xp,rarity:tmpl.r,isUnique:isUniq,power:tmpl.p,emoji:tmpl.e};fishingState='bite';pendingFish=fish;const bb=document.getElementById('bobber');if(bb)bb.classList.add('biting');render();biteTimer=setTimeout(()=>{if(pendingFish){const bb=document.getElementById('bobber');if(bb)bb.classList.remove('biting');pendingFish=null;fishingState='idle';bobberLeft=50;render()}},5000)},2000+Math.random()*8000)}
+
+// ==================== СПИННИНГ ====================
+function startSpinning(){if(!curSpot){alert('❌ Выберите место!');return}if(!P.cSpinner){alert('❌ Выберите блесну!');return}if(!P.cReel){alert('❌ Нужна катушка!');return}if(P.bFish.length>=P.cBP.slots){alert('❌ Рюкзак полон!');return}P.cSpinner.qty--;if(P.cSpinner.qty<=0){delete P.spinners[P.cSpinner.n];P.cSpinner=null}fishingState='spinning';spinLurePos=95;spinPulling=!1;spinFish=null;spinBitePos=50+Math.floor(Math.random()*41);if(Math.random()<0.7){const sf=curSpot.fish.map(n=>FISH[n]).filter(Boolean);let pool=sf.filter(f=>f.b==='Живец'||f.r!=='common');if(pool.length===0)pool=sf;const tmpl=pool[Math.floor(Math.random()*pool.length)];const w=Math.round((Math.random()*(tmpl.w[1]-tmpl.w[0])+tmpl.w[0])*100)/100;const rM={common:1,rare:2,legendary:5};let pr=Math.floor(w*1000*(curSpot.tier===1?1:curSpot.tier===2?5:10)*rM[tmpl.r]);let xp=Math.floor((w*1000/10)*(tmpl.r==='common'?1:tmpl.r==='rare'?2.5:5));const rec=P.records[tmpl.n]||0;const isUniq=rec>0&&w>=rec*0.9;if(isUniq){pr*=3;xp*=3}bFishEmoji=tmpl.e;spinFish={name:tmpl.n,weight:w,price:pr,exp:xp,rarity:tmpl.r,isUnique:isUniq,power:tmpl.p,emoji:tmpl.e}}const rc=document.getElementById('rod-container');if(rc){rc.classList.add('casting');rc.classList.add('bent');setTimeout(()=>rc.classList.remove('casting'),600)}renderSpinBattle();document.addEventListener('keydown',skD);document.addEventListener('keyup',skU);document.addEventListener('mousedown',smD);document.addEventListener('mouseup',smU);spinTimer=setInterval(tickSpin,70)}
+function skD(e){if(e.code==='Space'){e.preventDefault();spinPulling=!0}}
+function skU(e){if(e.code==='Space'){e.preventDefault();spinPulling=!1}}
+function smD(e){spinPulling=!0}
+function smU(e){spinPulling=!1}
+function tickSpin(){if(fishingState!=='spinning')return;const rs=P.cReel?1+P.cReel.pow*0.3:1;if(spinPulling){spinLurePos-=1.5*rs}else{spinLurePos+=0.4}spinLurePos=Math.max(0,Math.min(100,spinLurePos));if(spinFish&&spinLurePos<=spinBitePos&&spinLurePos>=spinBitePos-5){clearInterval(spinTimer);remSpinListeners();fishingState='idle';bobberLeft=spinBitePos;const f=spinFish;spinFish=null;startBattle(f,spinBitePos);return}if(spinLurePos<=0){clearInterval(spinTimer);remSpinListeners();fishingState='idle';const rc=document.getElementById('rod-container');if(rc)rc.classList.remove('bent');render();return}if(spinLurePos>=100){clearInterval(spinTimer);remSpinListeners();fishingState='idle';const rc=document.getElementById('rod-container');if(rc)rc.classList.remove('bent');render();return}renderSpinBattle()}
+function remSpinListeners(){document.removeEventListener('keydown',skD);document.removeEventListener('keyup',skU);document.removeEventListener('mousedown',smD);document.removeEventListener('mouseup',smU)}
+function renderSpinBattle(){const gs=document.getElementById('game-screen');if(!gs)return;const bzl=Math.max(0,spinBitePos-5);const bzw=10;gs.innerHTML=`<div id="top-bar"><span style="color:#4a9eff">🎣 СПИННИНГ</span><span>🪙 Заброс на 95%</span><span></span></div><div style="flex:1;position:relative"><div class="water-scene"><div class="wave"></div><div class="wave"></div><div class="wave"></div></div><div class="rod-scene"><div class="rod-container bent"><div class="rod-pole"><div class="rod-tip"></div><div class="fishing-line"></div><div class="bobber"></div></div></div></div></div><div class="battle-panel"><div class="battle-fish-name">🪙 Ведём блесну...</div><div class="spin-track"><div class="spin-lure" style="left:${spinLurePos}%">🪙</div>${spinFish?`<div class="spin-bite-zone" style="left:${bzl}%;width:${bzw}%"></div>`:''}</div><div style="font-size:0.6em;color:#7f8c9a;margin-top:2px">${spinFish?`🎯 Зона поклёвки: ~${spinBitePos}%`:'🎲 Рыбы нет, просто ведите блесну'}</div><div class="battle-controls"><button class="battle-btn" onmousedown="spinPulling=true" onmouseup="spinPulling=false" onmouseleave="spinPulling=false" ontouchstart="spinPulling=true" ontouchend="spinPulling=false">🎣 ТЯНУТЬ</button><button class="battle-net-btn" onclick="cancelSpin()">❌ Смотать</button></div><div class="battle-info">ПРОБЕЛ / ЛКМ — тянуть</div></div>`}
+window.cancelSpin=function(){clearInterval(spinTimer);remSpinListeners();fishingState='idle';spinLurePos=95;spinFish=null;const rc=document.getElementById('rod-container');if(rc)rc.classList.remove('bent');render()};
+
+// ==================== БИТВА ====================
+function startBattle(fish,startDistance=90){battle={fish,tensionFill:50,distance:startDistance,fishStamina:100+Math.random()*100,isFishResting:!1,startDistance};pulling=!1;bobberLeft=startDistance;const rc=document.getElementById('rod-container');if(rc)rc.classList.add('bent');const bb=document.getElementById('bobber');if(bb){bb.classList.add('reeling');bb.style.left=bobberLeft+'%'}renderBattle();document.addEventListener('keydown',kdH);document.addEventListener('keyup',kuH);battleTimer=setInterval(tickBattle,70)}
+function kdH(e){if(e.code==='Space'){e.preventDefault();pulling=!0}if(e.code==='KeyS'&&P.cNet)useNet()}
+function kuH(e){if(e.code==='Space'){e.preventDefault();pulling=!1}}
+function useNet(){if(battle&&battle.distance<=20&&P.cNet&&battle.fish.weight<=P.cNet.max){battle.distance=0;endBattle(!0)}}
+function tickBattle(){
+    const b=battle;if(!b)return;
+    if(pulling){b.fishStamina-=2.0;if(b.fishStamina<=0){b.fishStamina=0;b.isFishResting=!0}}
+    const effP=b.isFishResting?b.fish.power*0.15:b.fish.power;
+    const rp=P.cRod?.pow||1,opt=P.cRod?.opt||1,wr=b.fish.weight/opt;
+    let fillSpeed=0;if(pulling){fillSpeed=2.5+rp*0.4}else{fillSpeed=-(1.5+wr*0.5)}
+    b.tensionFill+=fillSpeed;b.tensionFill=Math.max(0,Math.min(100,b.tensionFill));
+    let efficiency=1-Math.abs(b.tensionFill-50)/50;efficiency=Math.max(0.1,efficiency);
+    if(pulling&&b.tensionFill>=35&&b.tensionFill<=65){b.distance-=2.5*efficiency*(P.cReel?1+P.cReel.pow*0.1:1)}else if(pulling){b.distance-=0.5*efficiency*(P.cReel?1+P.cReel.pow*0.05:1)}else{b.distance+=effP*0.3}
+    b.distance=Math.max(0,Math.min(100,b.distance));bobberLeft=b.distance;updateBobberPosition();
+    if(b.tensionFill<=1||b.tensionFill>=99){endBattle(!1,'💨 Сорвалась!');return}
+    if(b.fish.weight>=P.cLine.brk){const td=Math.abs(b.tensionFill-50)/50;if(Math.random()<td*0.05){endBattle(!1,'💥 Леска порвалась!');return}}
+    if(b.distance>=100){endBattle(!1,'🌊 Рыба ушла...');return}
+    if(b.distance<=0){endBattle(!0);return}
+    renderBattle();
+}
+function updateBobberPosition(){const bb=document.getElementById('bobber');if(bb)bb.style.left=bobberLeft+'%';const rc=document.getElementById('rod-container');if(rc){if(bobberLeft<30)rc.style.transform='rotate(-15deg) scaleX(1)';else if(bobberLeft>70)rc.style.transform='rotate(-40deg) scaleX(1.08)';else rc.style.transform=`rotate(${-15-(bobberLeft-30)*0.5}deg) scaleX(${1+(bobberLeft-30)*0.001})`}}
+function endBattle(won,msg){clearInterval(battleTimer);document.removeEventListener('keydown',kdH);document.removeEventListener('keyup',kuH);document.removeEventListener('keydown',globalKeyHandler);const rc=document.getElementById('rod-container');if(rc)rc.classList.remove('bent');const bb=document.getElementById('bobber');if(bb){bb.classList.remove('reeling');bb.style.left='50%'}if(won&&battle){if(P.bFish.length>=P.cBP.slots){alert('❌ Рюкзак полон!')}else{if(!P.records[battle.fish.name]||battle.fish.weight>P.records[battle.fish.name])P.records[battle.fish.name]=battle.fish.weight;const{lvl,lvs}=addExp(battle.fish.exp);P.bFish.push(battle.fish);P.totalFish++;showResult(battle.fish,lvl,lvs)}}else if(!won&&msg){alert(msg)}battle=null;pendingFish=null;clearTimeout(biteTimer);fishingState='idle';bobberLeft=50;save();render()}
+function showResult(fish,lvlUp,lvs){
+    // Показываем результат НАД модальным окном, используя фиксированное позиционирование
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:100';
+    overlay.innerHTML=`<div style="background:#141b22;border:1px solid #1e3048;border-radius:16px;padding:20px;max-width:400px;width:95%;text-align:center;position:relative">
+        <button style="position:absolute;top:10px;right:14px;background:none;border:none;color:#7f8c9a;font-size:1.5em;cursor:pointer" onclick="this.closest('div').parentElement.remove()">✕</button>
+        <span style="font-size:3.5em;animation:bob 2s ease-in-out infinite;display:block">${fish.emoji}</span>
+        <div style="font-size:1.4em;font-weight:700;color:#4a9eff;margin:8px 0">${fish.name}</div>
+        <div style="font-size:2.2em;font-weight:800;color:#fff">${fish.weight.toFixed(2)} кг</div>
+        ${fish.isUnique?'<div class="uniq-badge">⭐ УНИКАЛЬНАЯ!</div>':''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0">
+            <div style="background:rgba(0,0,0,0.3);padding:12px;border-radius:10px"><small>💰</small><br><b style="color:#f5b042;font-size:1.2em">${fish.price} руб</b></div>
+            <div style="background:rgba(0,0,0,0.3);padding:12px;border-radius:10px"><small>✨</small><br><b style="color:#a78bfa;font-size:1.2em">+${fish.exp} XP</b></div>
+        </div>
+        ${lvlUp?`<div style="color:#2ecc71;font-weight:700;font-size:1.1em;margin:8px 0">🎊 УРОВЕНЬ ${P.level}! (+${lvs})</div>`:''}
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove()});
+}
+
+function renderBattle(){
+    const b=battle;if(!b)return;const distLeft=b.distance,fillWidth=b.tensionFill;const staminaP=Math.floor(b.fishStamina/200*100);const lineDanger=b.fish.weight>=P.cLine.brk?`<div class="line-warning">⚠️ ${b.fish.weight}кг / леска ${P.cLine.brk}кг</div>`:'';const restText=b.isFishResting?' 😴 Устала!':'';let mColor='#fff';if(b.tensionFill<35||b.tensionFill>65)mColor='#e74c3c';else mColor='#2ecc71';
+    const gs=document.getElementById('game-screen');if(!gs)return;
+    gs.innerHTML=`<div id="top-bar"><span style="color:#4a9eff">🎣 БОРЬБА!</span><span style="font-size:0.8em">📏 До берега: <b>${Math.floor(b.distance)}%</b></span><span></span></div><div style="flex:1;position:relative"><div class="water-scene"><div class="wave"></div><div class="wave"></div><div class="wave"></div></div><div class="rod-scene"><div class="rod-container bent" id="rod-container" style="transform:rotate(${-15-(distLeft-30)*0.5}deg) scaleX(${1+(distLeft-30)*0.001})"><div class="rod-pole"><div class="rod-tip"></div><div class="fishing-line" style="transform:rotate(${(distLeft-50)*0.3}deg)"></div><div class="bobber reeling" id="bobber" style="left:${distLeft}%"></div></div></div></div></div><div class="battle-panel"><div class="battle-fish-name">${bFishEmoji} <b>${b.fish.name}</b> ${b.fish.weight.toFixed(1)}кг${restText}</div><div class="tension-track-outer"><div class="tension-track-bg"></div><div class="tension-fill" style="width:${fillWidth}%"></div><div class="tension-zone"></div><div class="tension-fish" style="left:${distLeft}%">${bFishEmoji}</div><div class="tension-dist-label" style="left:${distLeft}%">${Math.floor(b.distance)}%</div><div class="tension-marker" style="left:${fillWidth}%;background:${mColor};box-shadow:0 0 8px ${mColor}"></div></div><div style="display:flex;justify-content:space-between;width:100%;max-width:500px;font-size:0.5em;color:#7f8c9a;padding:0 2px"><span>🏖️ Берег</span><span>🟢 Зона</span><span>🌊 Глубина</span></div><div class="stamina-mini"><div class="stamina-mini-fill" style="width:${staminaP}%"></div></div>${lineDanger}<div class="battle-controls"><button class="battle-btn" onmousedown="pulling=true" onmouseup="pulling=false" onmouseleave="pulling=false" ontouchstart="pulling=true" ontouchend="pulling=false">🎣 ТЯНУТЬ</button>${P.cNet?`<button class="battle-net-btn" onclick="useNet()" ${b.distance>20?'disabled':''}>🥅 Сачок (S)</button>`:''}</div><div class="battle-info">ПРОБЕЛ / ЛКМ — тянуть | Удерживайте в 🟢 зоне!</div></div>`;
+}
+
+// ==================== МАГАЗИН ====================
+function showModal(t,c){const ex=document.querySelector('.modal');if(ex)ex.remove();const ov=document.createElement('div');ov.className='modal';ov.innerHTML=`<div class="modal-box"><button class="modal-close" onclick="this.closest('.modal').remove()">✕</button><div class="modal-title">${t}</div>${c}</div>`;document.body.appendChild(ov);ov.addEventListener('click',function(e){if(e.target===ov)ov.remove()})}
+window._openMap=function(){const regs=getRegions();let h='';regs.forEach((r,i)=>{h+=`<div class="region"><h4>📍 ${r.name}</h4><div>${r.spots.map((s,j)=>`<span class="spot${curSpot===s?' sel':''}" onclick="window._selSpot(${i},${j})">${s.name} ${'⭐'.repeat(s.tier)}</span>`).join('')}</div></div>`});if(regs.length===0)h='<p style="text-align:center;color:#7f8c9a">Повышайте уровень!</p>';showModal('🗺️ КАРТА',h)}
+window._selSpot=function(ri,si){const regs=getRegions();if(ri>=0&&ri<regs.length){curRegion=regs[ri];if(si>=0&&si<curRegion.spots.length)curSpot=curRegion.spots[si]}const m=document.querySelector('.modal');if(m)m.remove();render()}
+window._openEquip=function(type){let items=[],title='',current=null;switch(type){case'rod':title='🎣 Удилища и спиннинги';items=P.rods;current=P.cRod;break;case'line':title='📏 Лески';items=P.lines;current=P.cLine;break;case'hook':title='🪝 Крючки';items=P.hooks;current=P.cHook;break;case'bait':title='🪱 Наживки';items=Object.values(P.baits);current=P.cBait;break;case'spinner':title='🪙 Блёсны';items=Object.values(P.spinners);current=P.cSpinner;break;case'reel':title='🔧 Катушки';items=P.reels;current=P.cReel;break;case'chum':title='🧂 Прикормки';items=Object.values(P.chums);current=P.chumActive;break;case'net':title='🥅 Сачки';items=P.nets;current=P.cNet;break}let h=items.map((it,i)=>{const isC=(type==='chum')?(P.chumActive===it.n):(current&&current.key===it.key);let sp='';if(it.brk)sp=`Прочность: ${it.brk} кг`;else if(it.opt)sp=`Опт.вес: ${it.opt} кг`;else if(it.max)sp=`Макс.вес: ${it.max} кг`;else if(it.dur)sp=`Длит: ${it.dur/60} мин`;else if(it.smooth)sp=`Плавность: ${it.smooth}`;return`<div class="shop-item" style="background:${isC?'rgba(46,204,113,0.2)':'none'};cursor:pointer" onclick="window._selEquip('${type}',${i})"><div class="item-info"><div class="item-name">${it.n}</div><div class="item-specs">${sp}</div></div>${isC?'✅':''}</div>`}).join('');if(items.length===0)h='<p style="color:#7f8c9a;text-align:center">Нет предметов</p>';showModal(title,h)}
+window._selEquip=function(type,idx){switch(type){case'rod':P.cRod=P.rods[idx];isSpinning=P.cRod.type==='spinning';break;case'line':P.cLine=P.lines[idx];break;case'hook':P.cHook=P.hooks[idx];break;case'bait':{const b=Object.values(P.baits);if(b[idx]&&b[idx].qty>0)P.cBait=b[idx];break}case'spinner':{const s=Object.values(P.spinners);if(s[idx]&&s[idx].qty>0)P.cSpinner=s[idx];break}case'reel':P.cReel=P.reels[idx];break;case'chum':{const c=Object.values(P.chums);if(c[idx]&&c[idx].qty>0){P.chums[c[idx].n].qty--;P.chumActive=c[idx].n;P.chumEndTime=Date.now()+c[idx].dur*1000;if(P.chums[c[idx].n].qty<=0)delete P.chums[c[idx].n]}break}case'net':P.cNet=P.nets[idx];break}const m=document.querySelector('.modal');if(m)m.remove();render()}
+window._openShop=function(){
+    const cats=[{name:'Удочки',icon:'🎣',items:getAll(RODS),cat:'rods'},{name:'Спиннинги',icon:'🎣',items:getAll(RODS_SPIN),cat:'rodsSpin'},{name:'Лески',icon:'📏',items:getAll(LINES),cat:'lines'},{name:'Крючки',icon:'🪝',items:getAll(HOOKS),cat:'hooks'},{name:'Наживки',icon:'🪱',items:getAll(BAITS),cat:'baits'},{name:'Блёсны',icon:'🪙',items:getAll(SPINNERS),cat:'spinners'},{name:'Катушки',icon:'🔧',items:getAll(REELS),cat:'reels'},{name:'Прикормки',icon:'🧂',items:getAll(CHUMS),cat:'chums'},{name:'Сачки',icon:'🥅',items:getAll(NETS),cat:'nets'},{name:'Рюкзаки',icon:'🎒',items:getAll(BPS),cat:'backpacks'}];
+    const h=`<div style="margin-bottom:8px">💰 ${P.money} руб | ⭐ Ур.${P.level}</div><div class="shop-categories">${cats.map((c,i)=>`<div class="shop-cat-btn" onclick="window._openShopCat(${i})"><div class="cat-icon">${c.icon}</div><div class="cat-name">${c.name}</div><div class="cat-count">${c.items.filter(it=>it.lvl<=P.level).length}/${c.items.length}</div></div>`).join('')}</div>`;
+    window._shopCats=cats;showModal('🛒 МАГАЗИН',h);
+}
+window._openShopCat=function(idx){
+    const cats=window._shopCats;if(!cats||idx>=cats.length)return;const cat=cats[idx];
+    let h=`<div class="back-btn" onclick="window._openShop()">← Назад</div><br><h4 style="color:#f5b042;text-align:center">${cat.icon} ${cat.name}</h4>`;
+    cat.items.forEach(item=>{
+        const locked=item.lvl>P.level;let sp='';
+        if(item.brk)sp=`Прочность: ${item.brk} кг`;
+        else if(item.opt)sp=`Опт.вес: ${item.opt} кг | Сила: ${item.pow}`;
+        else if(item.max)sp=`Макс.вес: ${item.max} кг`;
+        else if(item.attr)sp=`Привлекательность: ${item.attr}`;
+        else if(item.tf)sp=`Цель: ${item.tf} | Длит: ${item.dur/60} мин`;
+        else if(item.slots)sp=`Слотов: ${item.slots}`;
+        else if(item.smooth)sp=`Плавность: ${item.smooth} | Мощь: ${item.pow}`;
+        else if(item.weight)sp=`Вес: ${item.weight}г | Цель: ${item.optFish}кг`;
+        // Используем data-атрибуты для безопасной передачи ключа
+        h+=`<div class="shop-item${locked?' locked':''}" data-key="${item.key}" data-cat="${cat.cat}" style="cursor:${locked?'not-allowed':'pointer'}" onclick="${locked?`alert('Нужен уровень ${item.lvl}')`:`window._doBuy(this.dataset.cat,this.dataset.key)`}"><div class="item-info"><div class="item-name">${item.n}</div><div class="item-specs">${sp}</div><div class="item-lvl">Ур. ${item.lvl}</div></div><div class="item-price">${item.price} руб</div></div>`;
+    });
+    const m=document.querySelector('.modal');if(m)m.remove();showModal(`${cat.icon} ${cat.name}`,h);
+}
+// Покупка через data-атрибуты (надёжный способ)
+window._doBuy=function(cat,key){
+    const item=ALL_ITEMS[key];
+    if(!item){alert('❌ Предмет не найден: '+key);return}
+    if(P.money<item.price){alert(`❌ Не хватает ${item.price-P.money} руб!`);return}
+    P.money-=item.price;
+    switch(cat){
+        case'rods':if(!P.rods.find(r=>r.key===key))P.rods.push(item);break;
+        case'rodsSpin':if(!P.rods.find(r=>r.key===key)){P.rods.push(item);isSpinning=!0}break;
+        case'lines':if(!P.lines.find(l=>l.key===key))P.lines.push(item);break;
+        case'hooks':if(!P.hooks.find(h=>h.key===key))P.hooks.push(item);break;
+        case'nets':if(!P.nets.find(n=>n.key===key))P.nets.push(item);break;
+        case'backpacks':if(!P.backpacks.find(b=>b.key===key))P.backpacks.push(item);break;
+        case'baits':if(P.baits[item.n])P.baits[item.n].qty+=30;else P.baits[item.n]={...item,qty:30};break;
+        case'spinners':if(P.spinners[item.n])P.spinners[item.n].qty+=3;else P.spinners[item.n]={...item,qty:3};break;
+        case'reels':if(!P.reels.find(r=>r.key===key))P.reels.push(item);break;
+        case'chums':if(P.chums[item.n])P.chums[item.n].qty+=1;else P.chums[item.n]={...item,qty:1};break;
+    }
+    alert(`✅ Куплено: ${item.n}!`);save();
+    window._openShopCat(window._shopCats.findIndex(c=>c.cat===cat));
+}
+window._openBackpack=function(){let h=`<div style="margin-bottom:8px">🎒 ${P.bFish.length}/${P.cBP.slots} | 💰 ${P.bFish.reduce((s,f)=>s+f.price,0)} руб</div>`;if(!P.bFish.length)h+='<p style="text-align:center;color:#7f8c9a">Рюкзак пуст</p>';else{P.bFish.forEach((f,i)=>{h+=`<div class="shop-item" style="justify-content:space-between"><span>${f.emoji} ${f.name} ${f.weight}кг ${f.isUnique?'⭐':''}</span><span>${f.price} руб</span><button onclick="window._sellFish(${i})" style="background:#059669;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer">💰</button></div>`});h+=`<button onclick="window._sellFish(-1)" style="width:100%;margin-top:8px;background:#059669;color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer">💵 Продать ВСЁ</button>`}showModal('🎒 РЮКЗАК',h)}
+window._sellFish=function(idx){if(idx===-1){const t=P.bFish.reduce((s,f)=>s+f.price,0);P.money+=t;P.bFish=[]}else if(idx>=0&&idx<P.bFish.length){P.money+=P.bFish.splice(idx,1)[0].price}const m=document.querySelector('.modal');if(m)m.remove();window._openBackpack();render()}
+
+// ==================== ЗАПУСК ====================
+initQuests();
+const loaded=load();
+if(!loaded)initQuests();
+startAtmosphere();render();
+if(!P.name){setTimeout(()=>{P.name=prompt('🎣 Добро пожаловать!\nВведите имя:')||'Рыбак';save();render();const fq=QUEST_CHAIN[0];if(!P.quests.find(q=>q.id===fq.id)){P.quests=[{...fq,done:!1}];P.questIndex=0;save();render()}setTimeout(()=>showQuestPopup(fq),800)},500)}
+if(!P.tutorialDone&&P.name){setTimeout(()=>{if(confirm('🎓 Пройти обучение?')){P.tutorialStep=0;(function st(){const steps=[{text:'Добро пожаловать!'},{text:'СНАРЯЖЕНИЕ:\nНажмите 🎣 Удочка внизу.',action:'highlight',target:'rod'},{text:'МАГАЗИН:\nНажмите 🛒 справа.',action:'highlight',target:'shop'},{text:'Купите Удочку 0.8кг за 100 руб.',action:'giveMoney',amount:100},{text:'Выберите новую удочку 🎣',action:'highlight',target:'rod'},{text:'ЛОКАЦИЯ:\nНажмите 📍 вверху.',action:'highlight',target:'location'},{text:'НАЖИВКА:\nНажмите 🪱 и выберите Червя.',action:'highlight',target:'bait'},{text:'БИТВА:\nУдерживайте заполнитель в 🟢 зоне.\nУдачи! 🎣'}];function ss(){if(P.tutorialStep>=steps.length){P.tutorialDone=!0;save();render();return}const s=steps[P.tutorialStep];if(s.action==='giveMoney')P.money+=s.amount||0;alert(s.text);P.tutorialStep++;save();render();if(s.action==='highlight'){setTimeout(()=>{if(s.target==='rod')document.querySelectorAll('.slot')[0]?.classList.add('highlight');if(s.target==='shop')document.querySelector('.cbtn')?.classList.add('highlight');if(s.target==='location')document.querySelector('#location-btn')?.classList.add('highlight');if(s.target==='bait')document.querySelectorAll('.slot')[3]?.classList.add('highlight')},300)}}P.tutorialStep=0;ss()})()}},1000)}
+
+} // конец initGame
+</script>
+</body>
 </html>
